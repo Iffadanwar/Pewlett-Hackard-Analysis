@@ -1,0 +1,319 @@
+-- Creating tables for PH-EmployeeDB
+CREATE TABLE departments(
+	dept_no VARCHAR(4) NOT NULL,
+	dept_name VARCHAR(40) NOT NULL,
+	PRIMARY KEY (dept_no),
+	UNIQUE (dept_name)
+);
+
+CREATE TABLE employees (
+	emp_no INT NOT NULL,
+	birth_date DATE NOT NULL,
+	first_name VARCHAR NOT NULL,
+	last_name VARCHAR NOT NULL,
+	gender VARCHAR NOT NULL,
+	hire_date DATE NOT NULL,
+	PRIMARY KEY (emp_no)
+);
+
+CREATE TABLE dept_manager (
+	dept_no VARCHAR(4) NOT NULL,
+	emp_no INT NOT NULL,
+	from_date DATE NOT NULL,
+	to_date DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employees (emp_no),
+	FOREIGN KEY (dept_no) REFERENCES departments (dept_no),
+	PRIMARY KEY (emp_no, dept_no)
+);
+
+CREATE TABLE salaries (
+	emp_no INT NOT NULL,
+	salary INT NOT NULL,
+	from_date DATE NOT NULL,
+	to_date DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employees (emp_no),
+	PRIMARY KEY (emp_no)
+);
+
+CREATE TABLE titles (
+	emp_no INT NOT NULL,
+	title VARCHAR NOT NULL,
+	from_date DATE NOT NULL,
+	to_date DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employees (emp_no),
+	FOREIGN KEY (emp_no) REFERENCES salaries (emp_no)
+);
+
+CREATE TABLE dept_emp (
+	emp_no INT NOT NULL,
+	dept_no VARCHAR(4) NOT NULL,
+	from_date DATE NOT NULL,
+	to_date DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employees (emp_no),
+	FOREIGN KEY (dept_no) REFERENCES departments (dept_no),
+	PRIMARY KEY (emp_no, dept_no)
+);
+
+SELECT * FROM departments;
+
+SELECT * FROM dept_emp;
+
+SELECT * FROM dept_manager;
+
+SELECT * FROM employees;
+
+SELECT * FROM salaries;
+
+SELECT * FROM titles;
+
+SELECT first_name, last_name
+FROM employees
+WHERE birth_date BETWEEN '1952-01-01' AND '1955-12-31';
+
+SELECT first_name, last_name
+FROM employees
+WHERE birth_date BETWEEN '1953-01-01' AND '1953-12-31';
+
+SELECT first_name, last_name
+FROM employees
+WHERE birth_date BETWEEN '1954-01-01' AND '1954-12-31';
+
+SELECT first_name, last_name
+FROM employees
+WHERE birth_date BETWEEN '1955-01-01' AND '1955-12-31';
+
+DROP TABLE retirement_info;
+
+SELECT emp_no, first_name, last_name 
+INTO retirement_info
+FROM employees
+WHERE (birth_date BETWEEN '1952-01-01' AND '1955-12-31')
+AND (hire_date BETWEEN '1985-01-01' AND '1988-12-31');
+
+SELECT COUNT(first_name) 
+FROM employees
+WHERE (birth_date BETWEEN '1952-01-01' AND '1955-12-31')
+AND (hire_date BETWEEN '1985-01-01' AND '1988-12-31');
+
+SELECT *FROM retirement_info;
+
+SELECT first_name, last_name, title
+FROM employees as e
+LEFT JOIN titles as t ON e.emp_no = t.emp_no;
+
+-- Joining departments and dept_manager tables
+SELECT departments.dept_name,
+	dept_manager.emp_no,
+	dept_manager.from_date,
+	dept_manager.to_date
+FROM departments
+INNER JOIN dept_manager
+ON departments.dept_no = dept_manager.dept_no;
+
+SELECT d.dept_name, 
+	dm.emp_no, 
+	dm.from_date, 
+	dm.to_date
+FROM departments as d
+INNER JOIN dept_manager as dm
+ON d.dept_no = dm.dept_no;
+
+
+
+
+-- Joining retirement_info and dept_emp tables
+SELECT retirement_info.emp_no,
+		retirement_info.first_name,
+		retirement_info.last_name,
+		dept_emp.to_date
+FROM retirement_info
+Left JOIN dept_emp
+ON retirement_info.emp_no = dept_emp.emp_no;
+
+SELECT ri.emp_no, ri.first_name, ri.last_name, de.to_date
+from retirement_info as ri
+Left JOIN dept_emp as de
+ON ri.emp_no = de.emp_no;
+
+SELECT ri.emp_no,
+	ri.first_name,
+	ri.last_name,
+	de.to_date
+INTO curret_emp
+FROM retirement_info as ri
+LEFT JOIN dept_emp as de
+ON ri.emp_no = de.emp_no
+WHERE de.to_date = ('9999-01-01');
+
+SELECT * FROM curret_emp;
+
+-- Employee count by department number
+SELECT COUNT(ce.emp_no), de.dept_no
+INTO dept_retire_count
+FROM curret_emp as ce
+LEFT JOIN dept_emp as de
+ON ce.emp_no = de.emp_no
+GROUP BY de.dept_no
+ORDER BY de.dept_no;
+
+SELECT * FROM dept_retire_count
+
+SELECT * FROM salaries
+ORDER BY to_date DESC;
+
+SELECT e.emp_no, 
+		e.first_name, 
+		e.last_name, 
+		e.gender,
+		s.salary,
+		de.to_date
+INTO emp_info
+FROM employees as e
+INNER JOIN salaries as s
+ON (e.emp_no = s.emp_no)
+INNER JOIN dept_emp as de
+ON (e.emp_no = de.emp_no)
+WHERE (e.birth_date BETWEEN '1952-01-01' AND '1955-12-31')
+AND (e.hire_date BETWEEN '1985-01-01' AND '1988-12-31')
+AND (de.to_date = '9999-01-01');
+
+-- List of managers per department
+SELECT dm.dept_no,
+		d.dept_name,
+		dm.emp_no,
+		ce.last_name,
+		ce.first_name,
+		dm.from_date,
+		dm.to_date
+INTO manager_info
+FROM dept_manager AS dm
+	INNER JOIN departments AS d
+		ON (dm.dept_no = d.dept_no)
+	INNER JOIN curret_emp AS ce
+		ON (dm.emp_no = ce.emp_no);
+
+SELECT ce.emp_no,
+		ce.first_name,
+		ce.last_name,
+		d.dept_name
+INTO dept_info
+FROM curret_emp AS ce
+	INNER JOIN dept_emp AS de
+		ON (ce.emp_no = de.emp_no)
+	INNER JOIN departments AS d
+		ON (de.dept_no = d.dept_no);
+
+SELECT * FROM retirement_info;
+
+SELECT ri.emp_no,
+		ri.first_name,
+		ri.Last_name,
+		d.dept_name
+INTO sales_info
+FROM retirement_info AS ri
+	LEFT JOIN dept_emp AS de
+		ON (ri.emp_no = de.emp_no)
+	LEFT JOIN departments as d
+		ON (de.dept_no = d.dept_no)
+WHERE (d.dept_name = 'Sales');
+
+SELECT * FROM sales_info
+
+SELECT ri.emp_no,
+		ri.first_name,
+		ri.Last_name,
+		d.dept_name
+INTO sales_dev_info
+FROM retirement_info AS ri
+	LEFT JOIN dept_emp AS de
+		ON (ri.emp_no = de.emp_no)
+	LEFT JOIN departments as d
+		ON (de.dept_no = d.dept_no)
+WHERE d.dept_name IN ('Sales', 'Development')
+ORDER BY d.dept_name;
+
+--------MODULE 7 CHALLENGE---------
+-------- DELIVERABLE 1 ----------
+-- 1-7. USED the next line to correct mistake
+DROP TABLE retirement_titles;
+--Retrieve needed columns 
+SELECT e.emp_no, 
+	   e.first_name, 
+	   e.last_name,
+	   ti.title,
+	   ti.from_date,
+	   ti.to_date
+--CREATE NEW TABLE USING 'INTO'
+INTO retirement_titles
+--creating alias and joining the 2 tables using emp_no as a join
+FROM employees AS e
+	LEFT JOIN titles AS ti
+		ON (e.emp_no = ti.emp_no)
+--Filtering the data by birthdays between 1952 and 1955
+WHERE (e.birth_date BETWEEN '1952-01-01' AND '1955-12-31')
+--Ordering by emp_NO
+ORDER BY emp_no;
+
+SELECT * FROM title_emp_info;
+
+-- 8 - 15. Use Dictinct with Orderby to remove duplicate rows
+--Retrieve needed columns 
+--Using DISTICT ON (emp_no) to remove dulicate emp_no
+SELECT DISTINCT ON (emp_no) emp_no, 
+			first_name, 
+			last_name, 
+			title
+--Label table
+INTO distinct_retire_title 
+--Calling on table needed
+FROM retirement_titles
+--Exclude those employees that have already left the company
+WHERE (to_date = '9999-01-01')
+ORDER BY emp_no, to_date DESC;
+
+-- 16 - 22. retrieve the number of titles from the Unique Titles table.
+SELECT COUNT(DISTINCT title)
+FROM distinct_retire_title;
+
+--Drops table to fix mistakes
+DROP TABLE retiring_titles;
+--Then, create a Retiring Titles table to hold the required information.
+SELECT COUNT(drt.emp_no),
+			drt.title
+INTO retiring_titles
+FROM distinct_retire_title as drt
+--Group the table by title, then sort the count column in descending order.
+GROUP BY title 
+ORDER BY COUNT(title) DESC;
+
+SELECT * FROM retiring_titles
+
+
+-------- DELIVERABLE 2 ----------
+--1 - 11. Retrieve needed columns 
+--Use a DISTINCT ON statement to retrieve the first occurrence of the employee number
+SELECT DISTINCT ON(emp_no) e.emp_no,
+	    e.first_name,
+	    e.last_name,
+	    e.birth_date,
+	    de.from_date,
+	    de.to_date,
+	    t.title
+--Create a new table using the INTO clause.
+INTO mentorship_eligibilty
+--Join the Employees and the Department Employee tables on the primary key.
+FROM employees as e
+	LEFT JOIN dept_emp as de
+		ON (e.emp_no = de.emp_no)
+--Join the Employees and the Titles tables on the primary key.
+	LEFT JOIN titles as t
+		ON (e.emp_no = t.emp_no)
+--FILTER DATA
+WHERE (t.to_date = '9999-01-01')
+AND (e.birth_date BETWEEN '1965-01-01' AND '1965-12-31')
+--Order the table by the employee number.
+ORDER BY e.emp_no;
+	
+	
+	
+	
