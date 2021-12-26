@@ -53,3 +53,5 @@ Based on the results, Pewlett Hackard is facing over 90,000 vacant positions of 
 Age based queries can be ran to determine the oldest and youngest departments and prioritize mentorship with the oldest departments. This could potentially minimize turnover impact.
 
 The campany should also hire a large amount of raw recruits from college as well as they can be most easliy trained. That being said about 25% of the force being hired should be experienced as to minize the loss of quality overall.
+
+Lastly there are 2 management vacancies that need to be filled as soon as possible.
